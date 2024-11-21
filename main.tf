@@ -67,39 +67,38 @@ resource "aws_route_table_association" "public_association" {
   route_table_id = aws_route_table.public_rt.id
 }
 
-# Create Elastic IP for NAT Gateway
-resource "aws_eip" "nat_eip" {
-  vpc = true
-}
-
-# Create NAT Gateway for Private Subnet
-resource "aws_nat_gateway" "nat_gw" {
-  allocation_id = aws_eip.nat_eip.id
-  subnet_id     = aws_subnet.public_subnet.id
-
-  tags = {
-    Name = "my-nat-gateway"
-  }
-}
-
-# Create Private Route Table
-resource "aws_route_table" "private_rt" {
+# Security Group for EC2 instance (allows SSH)
+resource "aws_security_group" "ec2_sg" {
   vpc_id = aws_vpc.main.id
 
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Allow SSH access from anywhere (use with caution)
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"] # Allow all outbound traffic
+  }
+
   tags = {
-    Name = "my-private-route-table"
+    Name = "ec2-sg"
   }
 }
 
-# Add Route to NAT Gateway in Private Route Table
-resource "aws_route" "private_nat_access" {
-  route_table_id         = aws_route_table.private_rt.id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.nat_gw.id
-}
+# EC2 Instance
+resource "aws_instance" "web" {
+  ami           = "ami-0a6e37788e5e5975a" # Replace with a valid AMI ID for your region
+  instance_type = "t2.micro"              # Free-tier eligible instance type
+  subnet_id     = aws_subnet.public_subnet.id
+  security_groups = [aws_security_group.ec2_sg.name] # Attach the security group
+  key_name      = "aws-manju"                         # Use the existing key pair
 
-# Associate Private Subnet with Private Route Table
-resource "aws_route_table_association" "private_association" {
-  subnet_id      = aws_subnet.private_subnet.id
-  route_table_id = aws_route_table.private_rt.id
+  tags = {
+    Name = "my-ec2-instance"
+  }
 }
