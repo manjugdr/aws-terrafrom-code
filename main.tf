@@ -92,7 +92,7 @@ resource "aws_security_group" "ec2_sg" {
 
 # EC2 Instance
 resource "aws_instance" "web" {
-  ami           = "ami-0a6e37788e5e5975a" # Replace with a valid AMI ID for your region
+  ami           = "ami-0dee22c13ea7a9a67" # Replace with a valid AMI ID for your region
   instance_type = "t2.micro"              # Free-tier eligible instance type
   subnet_id     = aws_subnet.public_subnet.id
   security_groups = [aws_security_group.ec2_sg.name] # Attach the security group
